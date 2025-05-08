@@ -1,0 +1,1 @@
+// Adaptador personalizado de Socket.IO si fuera necesario en el futuro 
