@@ -1,30 +1,66 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Game } from './entities/game.entity';
+import { PrismaService } from '../prisma/prisma.service';
+import { Game } from '@prisma/client';
 
 @Injectable()
 export class GamesService {
-  constructor(@InjectRepository(Game) private readonly repo: Repository<Game>) {}
+  constructor(private prisma: PrismaService) {}
 
-  create(data: Partial<Game>) {
-    const game = this.repo.create(data);
-    return this.repo.save(game);
+  async create(data: { code: string; stage?: string }): Promise<Game> {
+    try {
+      console.log("Creando juego con datos:", data);
+      
+      // Crear juego usando Prisma
+      const game = await this.prisma.game.create({
+        data: {
+          code: data.code,
+          stage: data.stage || 'lobby',
+        }
+      });
+      
+      console.log("Juego creado:", game);
+      
+      // Verificar que se guardó correctamente
+      const verifyGame = await this.findByCode(data.code);
+      console.log("Verificación del juego:", verifyGame);
+      
+      return game;
+    } catch (error) {
+      console.error("Error al crear juego:", error);
+      throw error;
+    }
   }
 
-  findAll() {
-    return this.repo.find();
+  async findAll(): Promise<Game[]> {
+    return this.prisma.game.findMany();
   }
 
-  findOne(id: string) {
-    return this.repo.findOne({ where: { id } });
+  async findOne(id: string): Promise<Game | null> {
+    return this.prisma.game.findUnique({
+      where: { id },
+    });
   }
 
-  update(id: string, data: Partial<Game>) {
-    return this.repo.update(id, data);
+  async findByCode(code: string): Promise<Game | null> {
+    return this.prisma.game.findUnique({
+      where: { code },
+      include: {
+        players: true,
+        rounds: true,
+      },
+    });
   }
 
-  remove(id: string) {
-    return this.repo.delete(id);
+  async update(id: string, data: Partial<Game>): Promise<Game> {
+    return this.prisma.game.update({
+      where: { id },
+      data,
+    });
+  }
+
+  async remove(id: string): Promise<Game> {
+    return this.prisma.game.delete({
+      where: { id },
+    });
   }
 } 

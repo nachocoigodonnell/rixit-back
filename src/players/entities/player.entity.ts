@@ -7,8 +7,17 @@ export class Player {
   id!: string;
 
   @Column()
-  username!: string;
+  name!: string;
 
-  @ManyToOne(() => Game)
+  @Column({ default: 0 })
+  score!: number;
+
+  @Column({ default: false })
+  isHost!: boolean;
+
+  @Column('jsonb', { default: [] })
+  hand!: any[];
+
+  @ManyToOne(() => Game, (game) => game.players, { onDelete: 'CASCADE' })
   game!: Game;
 } 

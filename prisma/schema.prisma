@@ -1,0 +1,51 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Game {
+  id      String   @id(map: "PK_c9b16b62917b5595af982d66337") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  code    String   @unique(map: "UQ_6048911d5f44406ad25e44eaaed") @db.VarChar
+  stage   String   @default("lobby") @db.VarChar
+  players Player[]
+  rounds  Round[]
+
+  @@map("games")
+}
+
+model Player {
+  id     String  @id(map: "PK_de22b8fdeee0c33ab55ae71da3b") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  name   String  @db.VarChar
+  score  Int     @default(0)
+  isHost Boolean @default(false)
+  gameId String? @db.Uuid
+  hand   Json    @default("[]")
+  game   Game?   @relation(fields: [gameId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "FK_e987db4cbe03070958e54074005")
+  rounds Round[]
+
+  @@map("players")
+}
+
+model Round {
+  id         String  @id(map: "PK_9d254884a20817016e2f877c7e7") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  number     Int
+  clue       String? @db.VarChar
+  status     String  @default("pending") @db.VarChar
+  gameId     String? @db.Uuid
+  narratorId String? @db.Uuid
+  players    Player? @relation(fields: [narratorId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_b028bd94952b2960c580bdd07d3")
+  game       Game?   @relation(fields: [gameId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "FK_cc567777a54c03ebb6cfb6bdd7d")
+
+  @@map("rounds")
+}
+
+model migrations {
+  id        Int    @id(map: "PK_8c82d7f526340ab734260ea46be") @default(autoincrement())
+  timestamp BigInt
+  name      String @db.VarChar
+}

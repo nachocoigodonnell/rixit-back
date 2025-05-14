@@ -1,30 +1,72 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Player } from './entities/player.entity';
+import { PrismaService } from '../prisma/prisma.service';
+import { Player } from '@prisma/client';
 
 @Injectable()
 export class PlayersService {
-  constructor(@InjectRepository(Player) private readonly repo: Repository<Player>) {}
+  constructor(private prisma: PrismaService) {}
 
-  create(data: Partial<Player>) {
-    const player = this.repo.create(data);
-    return this.repo.save(player);
+  async create(data: {
+    name: string;
+    isHost?: boolean;
+    gameId?: string;
+  }): Promise<Player> {
+    try {
+      console.log('Creando jugador:', data);
+      
+      return await this.prisma.player.create({
+        data: {
+          name: data.name,
+          isHost: data.isHost || false,
+          game: data.gameId ? { 
+            connect: { id: data.gameId } 
+          } : undefined
+        },
+        include: {
+          game: true
+        }
+      });
+    } catch (error) {
+      console.error('Error al crear jugador:', error);
+      throw error;
+    }
   }
 
-  findAll() {
-    return this.repo.find({ relations: ['game'] });
+  async findAll(): Promise<Player[]> {
+    return this.prisma.player.findMany();
   }
 
-  findOne(id: string) {
-    return this.repo.findOne({ where: { id }, relations: ['game'] });
+  async findOne(id: string): Promise<Player | null> {
+    return this.prisma.player.findUnique({
+      where: { id },
+      include: { game: true }
+    });
   }
 
-  update(id: string, data: Partial<Player>) {
-    return this.repo.update(id, data);
+  async update(id: string, data: Partial<Player>): Promise<Player> {
+    const { game, ...rest } = data as any;
+    
+    return this.prisma.player.update({
+      where: { id },
+      data: {
+        ...rest,
+        game: game?.id ? {
+          connect: { id: game.id }
+        } : undefined
+      },
+      include: { game: true }
+    });
   }
 
-  remove(id: string) {
-    return this.repo.delete(id);
+  async remove(id: string): Promise<Player> {
+    return this.prisma.player.delete({
+      where: { id }
+    });
+  }
+
+  async findByGame(gameId: string): Promise<Player[]> {
+    return this.prisma.player.findMany({
+      where: { gameId }
+    });
   }
 } 

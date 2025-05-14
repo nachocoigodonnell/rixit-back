@@ -1,6 +1,6 @@
 # Rixit Backend
 
-Este proyecto es el backend de Rixit, construido con NestJS, PostgreSQL, Redis y WebSockets.
+Este proyecto es el backend de Rixit, construido con NestJS, PostgreSQL y WebSockets.
 
 ## Desarrollo
 
