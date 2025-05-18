@@ -14,7 +14,8 @@ export class PlayersService {
     try {
       console.log('Creando jugador:', data);
       
-      return await this.prisma.player.create({
+      // Crear jugador
+      const newPlayer = await this.prisma.player.create({
         data: {
           name: data.name,
           isHost: data.isHost || false,
@@ -26,6 +27,27 @@ export class PlayersService {
           game: true
         }
       });
+
+      // Seleccionar 6 cartas aleatorias para la mano
+      // @ts-ignore - propiedades dinámicas generadas por Prisma
+      const allCards: any[] = await this.prisma.card.findMany();
+      if (allCards.length < 6) {
+        console.warn('No hay suficientes cartas en la base de datos para asignar una mano');
+      }
+      // Mezclar y tomar las primeras 6
+      const shuffled = allCards.sort(() => 0.5 - Math.random());
+      const selectedCards = shuffled.slice(0, 6).map(c => ({ id: c.id }));
+
+      // Crear la mano y asociar cartas
+      // @ts-ignore - propiedad 'hand' generada por Prisma
+      await this.prisma.hand.create({
+        data: {
+          player: { connect: { id: newPlayer.id } },
+          cards: { connect: selectedCards },
+        }
+      });
+
+      return newPlayer;
     } catch (error) {
       console.error('Error al crear jugador:', error);
       throw error;
